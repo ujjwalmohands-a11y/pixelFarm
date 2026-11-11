@@ -4,6 +4,7 @@ import {
   BookOpen,
   CloudRain,
   Flower2,
+  Key,
   Leaf,
   Send,
   Sparkles,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 import { TimeOfDay, WeatherType } from '../types/farm';
 import { PlantCounts } from '../systems/PlantingSystem';
-import { generateCompletion } from '../services/respanClient';
+import { generateCompletion, getApiKey, setApiKey } from '../services/respanClient';
 import { soundController } from '../systems/SoundController';
 
 interface CarbonAlmanacProps {
@@ -42,9 +43,19 @@ export const CarbonAlmanac: React.FC<CarbonAlmanacProps> = ({
   const [response, setResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'ecology' | 'spirit'>('ecology');
+  const [keyInput, setKeyInput] = useState(() => getApiKey());
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  const [keySavedMessage, setKeySavedMessage] = useState(false);
 
   // Carbon sequestered estimation (in grams of CO2)
   const carbonGrams = (counts.trees * 14.2 + counts.flowers * 1.8).toFixed(1);
+
+  const handleSaveKey = () => {
+    setApiKey(keyInput);
+    setKeySavedMessage(true);
+    setTimeout(() => setKeySavedMessage(false), 2400);
+    soundController.playUiClick(620);
+  };
 
   const handleAskSpirit = async (userPrompt: string) => {
     if (!userPrompt.trim()) return;
@@ -215,6 +226,33 @@ export const CarbonAlmanac: React.FC<CarbonAlmanacProps> = ({
                     fall of rain. Powered by Google Gemini Carbon via Respan Gateway.
                   </div>
                 </div>
+
+                <div className="spirit-key-toggle-row">
+                  <button
+                    type="button"
+                    className="key-config-toggle-btn"
+                    onClick={() => setShowKeyConfig((v) => !v)}
+                  >
+                    <Key size={11} />
+                    <span>{getApiKey() ? 'API Key Connected' : 'Configure Respan API Key (Optional)'}</span>
+                  </button>
+                  {keySavedMessage && <span className="key-saved-tag">Saved!</span>}
+                </div>
+
+                {showKeyConfig && (
+                  <div className="key-config-box">
+                    <input
+                      type="password"
+                      value={keyInput}
+                      onChange={(e) => setKeyInput(e.target.value)}
+                      placeholder="Paste Respan API key..."
+                      className="key-config-input"
+                    />
+                    <button type="button" onClick={handleSaveKey} className="key-save-btn">
+                      Save
+                    </button>
+                  </div>
+                )}
 
                 {/* Suggested prompt chips */}
                 <div className="spirit-chips">
